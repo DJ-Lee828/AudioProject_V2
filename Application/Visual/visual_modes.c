@@ -171,7 +171,7 @@ void VisualModes_DrawMirror_Full(const float *trail)
             // ==================================================
             // FULL: edge slightly stronger, center stable
             // ==================================================
-            float sigma = 0.4f;  // 조절 핵심 파라미터 0. 75
+            float sigma = 0.5f;  // 조절 핵심 파라미터 0. 75
 
             float fade = expf(- (t * t) / (2.0f * sigma * sigma));
             r *= fade;
@@ -225,9 +225,9 @@ void VisualModes_DrawMirror_Center(const float *trail)
             // ==================================================
             // CENTER: glow stronger near center line
             // ==================================================
-            float sigma = 0.6f;
+            float sigma = 0.65f;
             float fade = expf(- (t * t) / (2.0f * sigma * sigma));
-            fade = 0.7f + 0.3f * fade;
+            fade = 0.75f + 0.25f * fade;
             r *= fade;
             g *= fade;
             b *= fade;

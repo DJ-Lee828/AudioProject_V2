@@ -5,6 +5,7 @@
  *      Author: nugur
  */
 
+#include "visual_renderer.h"
 #include "visual_modes.h"
 #include "visual_theme.h"
 #include <string.h>
@@ -24,7 +25,7 @@ static void BuildGamma(void)
 	for (int i = 0; i < 256; i++)
     {
 		float x = (float)i / 255.0f;
-		s_gammaTable[i] = powf(x, 1.5f) * 90; // 1.2 , 100
+		s_gammaTable[i] = powf(x, 2.2f) * 200;
     }
 }
 
@@ -147,139 +148,126 @@ void VisualModes_DrawSpectrum6(const float *trail, const float *peakHold)
 	DrawSpectrumTheme(5, trail, peakHold);
 }
 
-void VisualModes_DrawMirror_Full(const float *trail, const float *peakHold)
+// ==================================================
+// FULL MIRROR
+// ==================================================
+void VisualModes_DrawMirror_Full(const float *trail)
 {
-	memset(s_frame, 0, sizeof(s_frame));
+    memset(s_frame, 0, sizeof(s_frame));
 
-	for (int x = 0; x < MATRIX_WIDTH; x++)
-	{
-		int h = (int)(trail[x] + 0.5f);
-		if (h > MATRIX_HEIGHT) h = MATRIX_HEIGHT;
+    for (int x = 0; x < MATRIX_WIDTH; x++)
+    {
+        int h = (int)(trail[x] + 0.5f);
+        if (h > MATRIX_HEIGHT) h = MATRIX_HEIGHT;
+        if (h < 0) h = 0;
 
-		// ==================================================
-		// BAR (FULL MIRROR)
-		// ==================================================
-		for (int y = 0; y < h; y++)
-		{
-			float t = (float)y / (float)(MATRIX_HEIGHT - 1);
+        for (int y = 0; y < h; y++)
+        {
+            float t = (float)y / (float)(MATRIX_HEIGHT - 1);
 
-			float r, g, b;
-			VisualTheme_GetColor(s_spectrumTheme, t, &r, &g, &b);
+            float r, g, b;
+            VisualTheme_GetMirrorColor(s_mirrorTheme, t, &r, &g, &b);
 
-			uint8_t R = s_gammaTable[(uint8_t)r];
-			uint8_t G = s_gammaTable[(uint8_t)g];
-			uint8_t B = s_gammaTable[(uint8_t)b];
+            // ==================================================
+            // FULL: edge slightly stronger, center stable
+            // ==================================================
+            float sigma = 0.4f;  // 조절 핵심 파라미터 0. 75
 
-			int top    = y;
-			int bottom = (MATRIX_HEIGHT - 1) - y;
+            float fade = expf(- (t * t) / (2.0f * sigma * sigma));
+            r *= fade;
+            g *= fade;
+            b *= fade;
 
-			s_frame[top][x][0] = R;
-			s_frame[top][x][1] = G;
-			s_frame[top][x][2] = B;
+            int R = (int)r;
+            int G = (int)g;
+            int B = (int)b;
 
-			s_frame[bottom][x][0] = R;
-			s_frame[bottom][x][1] = G;
-			s_frame[bottom][x][2] = B;
-		}
+            if (R > 255) R = 255;
+            if (G > 255) G = 255;
+            if (B > 255) B = 255;
 
-		// ==================================================
-		// PEAK HOLD
-		// ==================================================
-		int p = (int)(peakHold[x] + 0.5f);
-		if (p >= 0 && p < MATRIX_HEIGHT)
-		{
-			float pr, pg, pb;
-			VisualTheme_GetPeakColor(s_spectrumTheme, &pr, &pg, &pb);
+            int top = y;
+            int bottom = (MATRIX_HEIGHT - 1) - y;
 
-			uint8_t R = s_gammaTable[(uint8_t)pr];
-			uint8_t G = s_gammaTable[(uint8_t)pg];
-			uint8_t B = s_gammaTable[(uint8_t)pb];
+            s_frame[top][x][0] = (uint8_t)s_gammaTable[R];
+            s_frame[top][x][1] = (uint8_t)s_gammaTable[G];
+            s_frame[top][x][2] = (uint8_t)s_gammaTable[B];
 
-			int top    = p;
-			int bottom = (MATRIX_HEIGHT - 1) - p;
-
-			s_frame[top][x][0] = R;
-			s_frame[top][x][1] = G;
-			s_frame[top][x][2] = B;
-
-			s_frame[bottom][x][0] = R;
-			s_frame[bottom][x][1] = G;
-			s_frame[bottom][x][2] = B;
-		}
-	}
+            s_frame[bottom][x][0] = (uint8_t)s_gammaTable[R];
+            s_frame[bottom][x][1] = (uint8_t)s_gammaTable[G];
+            s_frame[bottom][x][2] = (uint8_t)s_gammaTable[B];
+        }
+    }
 }
 
-void VisualModes_DrawMirror_Center(const float *trail, const float *peakHold)
+// ==================================================
+// CENTER MIRROR
+// ==================================================
+void VisualModes_DrawMirror_Center(const float *trail)
 {
-	memset(s_frame, 0, sizeof(s_frame));
+    memset(s_frame, 0, sizeof(s_frame));
 
-	const int halfH = MATRIX_HEIGHT / 2;
+    const int halfH = MATRIX_HEIGHT / 2;
 
-	for (int x = 0; x < MATRIX_WIDTH; x++)
-	{
-		int h = (int)(trail[x] + 0.5f);
-		if (h > halfH) h = halfH;
-		if (h < 0) h = 0;
+    for (int x = 0; x < MATRIX_WIDTH; x++)
+    {
+        int h = (int)(trail[x] + 0.5f);
+        if (h > halfH) h = halfH;
+        if (h < 0) h = 0;
 
-		for (int y = 0; y < h; y++)
-		{
-			float t = (float)y / (float)(halfH - 1);
+        for (int y = 0; y < h; y++)
+        {
+            float t = (float)y / (float)(halfH - 1);
 
-			float r, g, b;
-			VisualTheme_GetColor(s_spectrumTheme, t, &r, &g, &b);
+            float r, g, b;
+            VisualTheme_GetMirrorColor(s_mirrorTheme, t, &r, &g, &b);
 
-			uint8_t R = s_gammaTable[(uint8_t)r];
-			uint8_t G = s_gammaTable[(uint8_t)g];
-			uint8_t B = s_gammaTable[(uint8_t)b];
+            // ==================================================
+            // CENTER: glow stronger near center line
+            // ==================================================
+            float sigma = 0.6f;
+            float fade = expf(- (t * t) / (2.0f * sigma * sigma));
+            fade = 0.7f + 0.3f * fade;
+            r *= fade;
+            g *= fade;
+            b *= fade;
 
-			int top = halfH - 1 - y;
-			int bottom = halfH + y;
+            int R = (int)r;
+            int G = (int)g;
+            int B = (int)b;
 
-			// =========================
-			// 충돌 방지 핵심
-			// =========================
+            if (R > 255) R = 255;
+            if (G > 255) G = 255;
+            if (B > 255) B = 255;
 
-			s_frame[top][x][0] = R;
-			s_frame[top][x][1] = G;
-			s_frame[top][x][2] = B;
+            int y0 = halfH - 1 - y;
+            int y1 = halfH + y;
 
-			s_frame[bottom][x][0] = R;
-			s_frame[bottom][x][1] = G;
-			s_frame[bottom][x][2] = B;
-		}
+            uint8_t cr = (uint8_t)s_gammaTable[R];
+            uint8_t cg = (uint8_t)s_gammaTable[G];
+            uint8_t cb = (uint8_t)s_gammaTable[B];
 
-		// =========================
-		// PEAK (중앙 기준 단일 write)
-		// =========================
+            if (y0 >= 0)
+            {
+                s_frame[y0][x][0] = cr;
+                s_frame[y0][x][1] = cg;
+                s_frame[y0][x][2] = cb;
+            }
 
-		int p = (int)(peakHold[x] + 0.5f);
-		if (p >= halfH) p = halfH - 1;
-		if (p < 0) p = 0;
-
-		float pr, pg, pb;
-		VisualTheme_GetPeakColor(s_spectrumTheme, &pr, &pg, &pb);
-
-		uint8_t R = s_gammaTable[(uint8_t)pr];
-		uint8_t G = s_gammaTable[(uint8_t)pg];
-		uint8_t B = s_gammaTable[(uint8_t)pb];
-
-		int top = halfH - 1 - p;
-		int bottom = halfH + p;
-
-		s_frame[top][x][0] = R;
-		s_frame[top][x][1] = G;
-		s_frame[top][x][2] = B;
-
-		s_frame[bottom][x][0] = R;
-		s_frame[bottom][x][1] = G;
-		s_frame[bottom][x][2] = B;
-	}
+            if (y1 < MATRIX_HEIGHT)
+            {
+                s_frame[y1][x][0] = cr;
+                s_frame[y1][x][1] = cg;
+                s_frame[y1][x][2] = cb;
+            }
+        }
+    }
 }
 
 // ======================================================
 // WATERFALL (FIXED COLOR)
 // ======================================================
-void VisualModes_DrawWaterfall(const float *trail, const float *peakHold)
+void VisualModes_DrawWaterfall(const float *trail)
 {
 	static uint8_t waterfall[MATRIX_HEIGHT][MATRIX_WIDTH][3];
 

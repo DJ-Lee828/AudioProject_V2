@@ -13,11 +13,10 @@
 
 #define MATRIX_WIDTH 16U
 #define MATRIX_HEIGHT 16U
-// 기존에 0x35였음
-#define LED_ON_R  0x35
-#define LED_ON_G  0x35
-#define LED_ON_B  0x35
 
+#define LED_ON_R  0x70
+#define LED_ON_G  0x70
+#define LED_ON_B  0x70
 // ======================================================
 // INIT
 // ======================================================
@@ -37,9 +36,9 @@ void VisualModes_DrawSpectrum6(const float *trail,const float *peakHold);
 // ======================================================
 // MODES
 // ======================================================
-void VisualModes_DrawMirror_Full(const float *trail,const float *peakHold);
-void VisualModes_DrawMirror_Center(const float *trail,const float *peakHold);
-void VisualModes_DrawWaterfall(const float *trail,const float *peakHold);
+void VisualModes_DrawMirror_Full(const float *trail);
+void VisualModes_DrawMirror_Center(const float *trail);
+void VisualModes_DrawWaterfall(const float *trail);
 void VisualModes_DrawRainbow(const float *trail);
 
 // ======================================================

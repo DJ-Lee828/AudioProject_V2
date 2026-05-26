@@ -30,6 +30,7 @@ typedef enum
 // API
 // ======================================================
 extern uint8_t s_spectrumTheme;
+extern uint8_t s_mirrorTheme;
 
 void VisualRenderer_Init(void);
 
@@ -40,6 +41,7 @@ void VisualRenderer_Draw(const float *trail,const float *peakHold);
 void VisualRenderer_NextMode(void);
 
 void VisualRenderer_NextSpectrumTheme(void);
+void VisualRenderer_NextMirrorTheme(void);
 
 const uint8_t *VisualRenderer_GetFrame(void);
 

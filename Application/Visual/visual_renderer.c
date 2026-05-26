@@ -4,7 +4,7 @@
  *  Created on: 2026. 5. 18.
  *      Author: nugur
  */
-
+#include "visual_theme.h"
 #include "visual_renderer.h"
 #include <string.h>
 #include <math.h>
@@ -17,13 +17,13 @@
 // ======================================================
 // 현재 모드
 // ======================================================
-static VisualMode_t s_visualMode = VISUAL_MODE_RAINBOW;
+static VisualMode_t s_visualMode = VISUAL_MODE_SPECTRUM;
 
 // ======================================================
-// SPECTRUM + MIRROR 공유 테마
+// SPECTRUM + WATERFALL + RAINBOW 공유 테마 및 MIRROR 테마
 // ======================================================
 uint8_t s_spectrumTheme = 0;
-
+uint8_t s_mirrorTheme = 0;
 // ======================================================
 // INIT
 // ======================================================
@@ -54,16 +54,29 @@ void VisualRenderer_NextMode(void)
 }
 
 // ======================================================
-// NEXT SPECTRUM THEME
+// NEXT SPECTRUM + WATERFALL + RAINBOW THEME
 // ======================================================
 void VisualRenderer_NextSpectrumTheme(void)
 {
-	s_spectrumTheme++;
+    s_spectrumTheme++;
 
-	if (s_spectrumTheme >= 6)
-	{
-		s_spectrumTheme = 0;
-	}
+    if (s_spectrumTheme >= SPECTRUM_THEME_COUNT)
+    {
+        s_spectrumTheme = 0;
+    }
+}
+
+// ======================================================
+// NEXT MIRROR THEME
+// ======================================================
+void VisualRenderer_NextMirrorTheme(void)
+{
+    s_mirrorTheme++;
+
+    if (s_mirrorTheme >= MIRROR_THEME_COUNT)
+    {
+        s_mirrorTheme = 0;
+    }
 }
 
 // ======================================================
@@ -71,42 +84,6 @@ void VisualRenderer_NextSpectrumTheme(void)
 // ======================================================
 void VisualRenderer_Draw(const float *trail, const float *peakHold)
 {
-	//s_modeTick++;
-
-	// ============================================== ====
-	// AUTO MODE CHANGE
-	// ==================================================
-	if (s_visualMode == VISUAL_MODE_RAINBOW)
-	{
-		static uint32_t mirrorTick = 0;
-
-		mirrorTick++;
-
-		if (mirrorTick >= 700)
-		{
-			mirrorTick = 0;
-			VisualRenderer_NextSpectrumTheme();
-		}
-	}
-
-	/*if (s_modeTick > 500)
-	{
-		s_modeTick = 0;
-
-		// spectrum 모드, mirror 모드일 때만
-		// 내부 테마 자동 순환
-
-		if (s_visualMode == VISUAL_MODE_SPECTRUM ||
-			s_visualMode == VISUAL_MODE_MIRROR)
-		{
-			VisualRenderer_NextSpectrumTheme();
-		}
-	}*/
-
-
-	// ==================================================
-	// DRAW MODE
-	// ==================================================
 	switch (s_visualMode)
 	{
 		// ==============================================
@@ -169,21 +146,21 @@ void VisualRenderer_Draw(const float *trail, const float *peakHold)
 		// MIRROR_FULL
 		// ==============================================
 		case VISUAL_MODE_MIRROR_FULL:
-			VisualModes_DrawMirror_Full(trail,peakHold);
+			VisualModes_DrawMirror_Full(trail);
 			break;
 
 		// ==============================================
 		// MIRROR_CENTER
 		// ==============================================
 		case VISUAL_MODE_MIRROR_CENTER:
-			VisualModes_DrawMirror_Center(trail,peakHold);
+			VisualModes_DrawMirror_Center(trail);
 			break;
 
 		// ==============================================
 		// WATERFALL
 		// ==============================================
 		case VISUAL_MODE_WATERFALL:
-			VisualModes_DrawWaterfall(trail,peakHold);
+			VisualModes_DrawWaterfall(trail);
 			break;
 
 		// ==============================================

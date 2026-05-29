@@ -10,11 +10,6 @@
 #include <math.h>
 
 // ======================================================
-// MODE TICK
-// ======================================================
-//static uint32_t s_modeTick = 0;
-
-// ======================================================
 // 현재 모드
 // ======================================================
 static VisualMode_t s_visualMode = VISUAL_MODE_SPECTRUM;
@@ -24,6 +19,8 @@ static VisualMode_t s_visualMode = VISUAL_MODE_SPECTRUM;
 // ======================================================
 uint8_t s_spectrumTheme = 0;
 uint8_t s_mirrorTheme = 0;
+
+static float s_time = 0.0f;
 // ======================================================
 // INIT
 // ======================================================
@@ -163,8 +160,44 @@ void VisualRenderer_Draw(const float *trail, const float *peakHold)
 			VisualModes_DrawRainbow(trail);
 			break;
 
+		case VISUAL_MODE_PULSE:
+		    VisualModes_DrawPulse(trail);
+		    break;
+
+		case VISUAL_MODE_GRID_BREATH:
+		{
+		    s_time += 0.016f;   // 약 60fps 기준 (1/60)
+
+		    if (s_time > 1000.0f)
+		        s_time = 0.0f;  // overflow 방지
+
+		    VisualModes_DrawGridBreath(trail, s_time);
+		}
+		break;
+
+		case VISUAL_MODE_ROTATING_FIELD:
+		{
+			s_time += 0.016f;   // 약 60fps 기준 (1/60)
+
+			if (s_time > 1000.0f)
+				s_time = 0.0f;  // overflow 방지
+
+			VisualModes_DrawRotatingField(trail, s_time);
+		}
+		break;
+
+		case VISUAL_MODE_SPARK_NOISE:
+		{
+			s_time += 0.016f;   // 약 60fps 기준 (1/60)
+
+			if (s_time > 1000.0f)
+				s_time = 0.0f;  // overflow 방지
+
+			VisualModes_DrawSparkNoise(trail, s_time);
+		}
+		break;
 		// ==============================================
-		// WATERFALL
+		// WATERUP
 		// ==============================================
 		case VISUAL_MODE_WATERUP:
 			VisualModes_DrawWaterup(trail);

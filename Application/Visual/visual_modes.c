@@ -16,7 +16,6 @@
 // ======================================================
 static uint8_t s_frame[MATRIX_HEIGHT][MATRIX_WIDTH][3];
 static uint8_t s_gammaTable[256];
-
 // ======================================================
 // GAMMA
 // ======================================================
@@ -263,9 +262,217 @@ void VisualModes_DrawRainbow(const float *trail)
 		}
 	}
 }
+void VisualModes_DrawPulse(const float *trail)
+{
+    memset(s_frame, 0, sizeof(s_frame));
+
+    static float t_global = 0.0f;
+
+    // 내부에서 energy 계산 (FFT 기반 or 더미)
+    float energy = 0.0f;
+
+    for (int i = 0; i < MATRIX_WIDTH; i++)
+        energy += trail[i];
+
+    energy /= MATRIX_WIDTH;
+    energy = energy / (float)MATRIX_HEIGHT; // normalize
+
+    float speed = 0.02f + energy * 0.05f;
+
+    t_global += speed;
+
+    float pulse = 0.5f + 0.5f * sinf(t_global);
+    pulse *= pulse;
+
+    for (int x = 0; x < MATRIX_WIDTH; x++)
+    {
+        int h = (int)(trail[x] + 0.5f);
+        if (h > MATRIX_HEIGHT) h = MATRIX_HEIGHT;
+
+        for (int y = 0; y < h; y++)
+        {
+            float t = (float)y / (float)(MATRIX_HEIGHT - 1);
+
+            float r, g, b;
+            VisualTheme_GetColor(s_spectrumTheme, t, &r, &g, &b);
+
+            int R = (int)(r * pulse);
+            int G = (int)(g * pulse);
+            int B = (int)(b * pulse);
+
+            if (R > 255) R = 255;
+            if (G > 255) G = 255;
+            if (B > 255) B = 255;
+
+            s_frame[y][x][0] = s_gammaTable[R];
+            s_frame[y][x][1] = s_gammaTable[G];
+            s_frame[y][x][2] = s_gammaTable[B];
+        }
+    }
+}
+void VisualModes_DrawGridBreath(const float *trail, float time)
+{
+	memset(s_frame, 0, sizeof(s_frame));
+
+	    float breath = 0.5f + 0.5f * sinf(time * 1.5f);
+	    breath *= breath;
+
+	    for (int y = 0; y < MATRIX_HEIGHT; y++)
+	    {
+	        for (int x = 0; x < MATRIX_WIDTH; x++)
+	        {
+	            float noise =
+	                sinf(x * 0.8f + time) *
+	                cosf(y * 0.7f + time);
+
+	            float v = (noise + 1.0f) * 0.5f * breath;
+
+	            float r, g, b;
+	            VisualTheme_GetColor(s_spectrumTheme, v, &r, &g, &b);
+
+	            r *= 0.6f;
+	            g *= 0.6f;
+	            b *= 0.6f;
+
+	            uint8_t rr = s_gammaTable[(uint8_t)r];
+	            uint8_t gg = s_gammaTable[(uint8_t)g];
+	            uint8_t bb = s_gammaTable[(uint8_t)b];
+
+	            s_frame[y][x][0] = rr;
+	            s_frame[y][x][1] = gg;
+	            s_frame[y][x][2] = bb;
+        }
+    }
+}
+
+void VisualModes_DrawRotatingField(const float *trail, float time)
+{
+    memset(s_frame, 0, sizeof(s_frame));
+
+    float cx = MATRIX_WIDTH * 0.5f;
+    float cy = MATRIX_HEIGHT * 0.5f;
+
+    float angle = time * 0.8f;
+
+    for (int y = 0; y < MATRIX_HEIGHT; y++)
+    {
+        for (int x = 0; x < MATRIX_WIDTH; x++)
+        {
+            float dx = x - cx;
+            float dy = y - cy;
+
+            float rx = dx * cosf(angle) - dy * sinf(angle);
+            float ry = dx * sinf(angle) + dy * cosf(angle);
+
+            float v = sinf(rx * 0.3f) + cosf(ry * 0.3f);
+            v = (v + 2.0f) / 4.0f;
+
+            float r, g, b;
+            VisualTheme_GetColor(s_spectrumTheme, v, &r, &g, &b);
+
+            uint8_t rr = s_gammaTable[(uint8_t)r];
+            uint8_t gg = s_gammaTable[(uint8_t)g];
+            uint8_t bb = s_gammaTable[(uint8_t)b];
+
+            s_frame[y][x][0] = rr;
+            s_frame[y][x][1] = gg;
+            s_frame[y][x][2] = bb;
+        }
+    }
+}
+
+void VisualModes_DrawSparkNoise(const float *trail, float time)
+{
+    memset(s_frame, 0, sizeof(s_frame));
+
+    for (int x = 0; x < MATRIX_WIDTH; x++)
+    {
+        float base = trail[x];
+
+        float wave =
+            sinf(time * 2.0f + x * 0.35f) * 2.5f +
+            sinf(time * 1.1f + x * 0.12f) * 1.5f;
+
+        float heightF = base + wave;
+
+        if (heightF < 0) heightF = 0;
+        if (heightF > MATRIX_HEIGHT) heightF = MATRIX_HEIGHT;
+
+        int height = (int)(heightF + 0.5f);
+
+        for (int y = 0; y < height; y++)
+        {
+            float t = (float)y / (float)(MATRIX_HEIGHT - 1);
+
+            float r, g, b;
+            VisualTheme_GetColor(s_spectrumTheme, t, &r, &g, &b);
+
+            // =========================================
+            // NOISE (스파이크 약하게)
+            // =========================================
+            float n =
+                sinf(x * 12.9898f + y * 78.233f + time * 6.0f);
+
+            n = n - floorf(n);
+
+            float spark = 0.0f;
+            if (n > 0.88f)   // ← 확률 낮춤 (덜 튐)
+            {
+                spark = 2.0f; // ← 강도 감소
+            }
+
+            // =========================================
+            // ENERGY
+            // =========================================
+            float energy = 0.6f + 0.4f * sinf(time * 1.8f);
+            energy *= energy;
+
+            // =========================================
+            // BASE LIGHT (전체 밝기 증가)
+            // =========================================
+            float baseLight = 0.72f;   // ↑ 전체 밝기 크게 증가
+
+            float base = baseLight * (0.75f + 0.25f * energy);
+
+            // =========================================
+            // FINAL INTENSITY
+            // =========================================
+            float intensity = base + (spark * energy * 0.6f); // ← 스파크 영향 감소
+
+            // =========================================
+            // APPLY COLOR
+            // =========================================
+            r *= intensity * 0.90f;
+            g *= intensity * 0.90f;
+            b *= intensity * 0.90f;
+
+            if (r > 255.0f) r = 255.0f;
+            if (g > 255.0f) g = 255.0f;
+            if (b > 255.0f) b = 255.0f;
+
+            uint8_t rr = s_gammaTable[(uint8_t)r];
+            uint8_t gg = s_gammaTable[(uint8_t)g];
+            uint8_t bb = s_gammaTable[(uint8_t)b];
+
+            s_frame[y][x][0] = rr;
+            s_frame[y][x][1] = gg;
+            s_frame[y][x][2] = bb;
+
+            // =========================================
+            // SPARK BLEED (약하게 유지)
+            // =========================================
+            if (spark > 0.0f && y + 1 < MATRIX_HEIGHT)
+            {
+                s_frame[y + 1][x][0] = rr;
+                s_frame[y + 1][x][1] = gg;
+                s_frame[y + 1][x][2] = bb;
+            }
+        }
+    }
+}
 
 // ======================================================
-// WATERFALL (FIXED COLOR)
+// WATERUP (FIXED COLOR)
 // ======================================================
 void VisualModes_DrawWaterup(const float *trail)
 {

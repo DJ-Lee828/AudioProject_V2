@@ -39,6 +39,10 @@ void VisualModes_DrawSpectrum6(const float *trail,const float *peakHold);
 void VisualModes_DrawMirror_Full(const float *trail);
 void VisualModes_DrawMirror_Center(const float *trail);
 void VisualModes_DrawRainbow(const float *trail);
+void VisualModes_DrawPulse(const float *trail);
+void VisualModes_DrawGridBreath(const float *trail, float time);
+void VisualModes_DrawRotatingField(const float *trail, float time);
+void VisualModes_DrawSparkNoise(const float *trail, float time);
 void VisualModes_DrawWaterup(const float *trail);
 
 // ======================================================

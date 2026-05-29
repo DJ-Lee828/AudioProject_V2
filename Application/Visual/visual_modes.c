@@ -25,7 +25,7 @@ static void BuildGamma(void)
 	for (int i = 0; i < 256; i++)
     {
 		float x = (float)i / 255.0f;
-		s_gammaTable[i] = powf(x, 2.2f) * 200;
+		s_gammaTable[i] = powf(x, 2.2f) * 210;
     }
 }
 
@@ -161,41 +161,30 @@ void VisualModes_DrawMirror_Full(const float *trail)
         if (h > MATRIX_HEIGHT) h = MATRIX_HEIGHT;
         if (h < 0) h = 0;
 
+        float r, g, b;
+        VisualTheme_GetMirrorColor(s_mirrorTheme, 1.0f, &r, &g, &b);
+        // ★ t=1 고정 → 단색화
+
+        uint8_t R = (uint8_t)r;
+        uint8_t G = (uint8_t)g;
+        uint8_t B = (uint8_t)b;
+
+        uint8_t cr = s_gammaTable[R];
+        uint8_t cg = s_gammaTable[G];
+        uint8_t cb = s_gammaTable[B];
+
         for (int y = 0; y < h; y++)
         {
-            float t = (float)y / (float)(MATRIX_HEIGHT - 1);
-
-            float r, g, b;
-            VisualTheme_GetMirrorColor(s_mirrorTheme, t, &r, &g, &b);
-
-            // ==================================================
-            // FULL: edge slightly stronger, center stable
-            // ==================================================
-            float sigma = 0.5f;  // 조절 핵심 파라미터 0. 75
-
-            float fade = expf(- (t * t) / (2.0f * sigma * sigma));
-            r *= fade;
-            g *= fade;
-            b *= fade;
-
-            int R = (int)r;
-            int G = (int)g;
-            int B = (int)b;
-
-            if (R > 255) R = 255;
-            if (G > 255) G = 255;
-            if (B > 255) B = 255;
-
             int top = y;
             int bottom = (MATRIX_HEIGHT - 1) - y;
 
-            s_frame[top][x][0] = (uint8_t)s_gammaTable[R];
-            s_frame[top][x][1] = (uint8_t)s_gammaTable[G];
-            s_frame[top][x][2] = (uint8_t)s_gammaTable[B];
+            s_frame[top][x][0] = cr;
+            s_frame[top][x][1] = cg;
+            s_frame[top][x][2] = cb;
 
-            s_frame[bottom][x][0] = (uint8_t)s_gammaTable[R];
-            s_frame[bottom][x][1] = (uint8_t)s_gammaTable[G];
-            s_frame[bottom][x][2] = (uint8_t)s_gammaTable[B];
+            s_frame[bottom][x][0] = cr;
+            s_frame[bottom][x][1] = cg;
+            s_frame[bottom][x][2] = cb;
         }
     }
 }
@@ -209,6 +198,14 @@ void VisualModes_DrawMirror_Center(const float *trail)
 
     const int halfH = MATRIX_HEIGHT / 2;
 
+    float r, g, b;
+    VisualTheme_GetMirrorColor(s_mirrorTheme, 1.0f, &r, &g, &b);
+    // ★ 완전 단색
+
+    uint8_t cr = s_gammaTable[(uint8_t)r];
+    uint8_t cg = s_gammaTable[(uint8_t)g];
+    uint8_t cb = s_gammaTable[(uint8_t)b];
+
     for (int x = 0; x < MATRIX_WIDTH; x++)
     {
         int h = (int)(trail[x] + 0.5f);
@@ -217,35 +214,8 @@ void VisualModes_DrawMirror_Center(const float *trail)
 
         for (int y = 0; y < h; y++)
         {
-            float t = (float)y / (float)(halfH - 1);
-
-            float r, g, b;
-            VisualTheme_GetMirrorColor(s_mirrorTheme, t, &r, &g, &b);
-
-            // ==================================================
-            // CENTER: glow stronger near center line
-            // ==================================================
-            float sigma = 0.65f;
-            float fade = expf(- (t * t) / (2.0f * sigma * sigma));
-            fade = 0.75f + 0.25f * fade;
-            r *= fade;
-            g *= fade;
-            b *= fade;
-
-            int R = (int)r;
-            int G = (int)g;
-            int B = (int)b;
-
-            if (R > 255) R = 255;
-            if (G > 255) G = 255;
-            if (B > 255) B = 255;
-
             int y0 = halfH - 1 - y;
             int y1 = halfH + y;
-
-            uint8_t cr = (uint8_t)s_gammaTable[R];
-            uint8_t cg = (uint8_t)s_gammaTable[G];
-            uint8_t cb = (uint8_t)s_gammaTable[B];
 
             if (y0 >= 0)
             {

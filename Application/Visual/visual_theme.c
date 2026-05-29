@@ -1,32 +1,123 @@
 /*
-	* visual_theme.c
-	*
-	*  Created on: 2026. 5. 22.
-	*      Author: nugur
-	*/
+ * visual_theme.c (refactored stable version)
+ */
 
 #include "visual_theme.h"
 #include "visual_renderer.h"
-
 #include <math.h>
 
 // ======================================================
-// helper
+// TYPE
 // ======================================================
+
+typedef struct {
+    float r, g, b;
+} Color;
+
+// ======================================================
+// SAFE UTIL
+// ======================================================
+
+static inline float clamp01(float x)
+{
+    return (x < 0.0f) ? 0.0f : (x > 1.0f ? 1.0f : x);
+}
+
 static inline float clampf(float x, float max)
 {
     return (x > max) ? max : x;
 }
 
-// smoothstep
 static inline float smoothstep(float x)
 {
+    x = clamp01(x);
     return x * x * (3.0f - 2.0f * x);
 }
 
+static inline float lerp(float a, float b, float t)
+{
+    return a + (b - a) * t;
+}
+
 // ======================================================
-// COLOR THEME
+// LED OUTPUT APPLY
 // ======================================================
+
+static inline void applyColor(Color c, float *r, float *g, float *b)
+{
+    *r = LED_ON_R * c.r;
+    *g = LED_ON_G * c.g;
+    *b = LED_ON_B * c.b;
+
+    *r = clampf(*r, LED_ON_R);
+    *g = clampf(*g, LED_ON_G);
+    *b = clampf(*b, LED_ON_B);
+}
+
+// ======================================================
+// SEGMENT (SAFE GRADIENT)
+// ======================================================
+
+static inline int segment(
+    float t,
+    float t0,
+    float t1,
+    Color c0,
+    Color c1,
+    float *r,
+    float *g,
+    float *b)
+{
+    if (t < t0 || t >= t1)
+        return 0;
+
+    float d = t1 - t0;
+    if (d <= 1e-6f)
+        return 0;
+
+    float x = (t - t0) / d;
+    x = clamp01(x);
+
+    float k = smoothstep(x);
+
+    Color out = {
+        lerp(c0.r, c1.r, k),
+        lerp(c0.g, c1.g, k),
+        lerp(c0.b, c1.b, k),
+    };
+
+    applyColor(out, r, g, b);
+    return 1;
+}
+
+// ======================================================
+// COLOR PALETTE
+// ======================================================
+
+static const Color C_RED     = {1.00f, 0.05f, 0.05f};
+static const Color C_PINK    = {1.00f, 0.25f, 0.90f};
+static const Color C_WHITEP  = {1.00f, 0.85f, 1.00f};
+
+static const Color C_PURPLE  = {0.60f, 0.10f, 1.00f};
+static const Color C_LAV     = {0.85f, 0.65f, 1.00f};
+
+static const Color C_BLUE    = {0.10f, 0.25f, 1.00f};
+static const Color C_SKY     = {0.20f, 0.75f, 1.00f};
+static const Color C_CYAN    = {0.10f, 1.00f, 1.00f};
+
+static const Color C_GREEN   = {0.10f, 1.00f, 0.20f};
+static const Color C_LIME    = {0.60f, 1.00f, 0.10f};
+
+static const Color C_YELLOW  = {1.00f, 1.00f, 0.10f};
+static const Color C_ORANGE  = {1.00f, 0.55f, 0.05f};
+
+static const Color C_WHITEG  = {1.00f, 1.00f, 0.75f};
+static const Color C_WARMW   = {1.00f, 0.95f, 0.90f};
+
+// ======================================================
+// MAIN COLOR ENGINE
+// ======================================================
+
 void VisualTheme_GetColor(
     uint8_t theme,
     float t,
@@ -34,233 +125,91 @@ void VisualTheme_GetColor(
     float *g,
     float *b)
 {
+    t = clamp01(t);
+
     switch (theme)
     {
-    // ==================================================
-    // CYBER AURORA
-    // ==================================================
     case 0:
-    {
-        if (t < 0.25f)
-        {
-            float k = smoothstep(t / 0.25f);
-
-            *r = LED_ON_R * (1.00f - 0.65f * k);
-            *g = LED_ON_G * (0.18f + 0.82f * k);
-            *b = LED_ON_B * 1.45f;
-        }
-        else if (t < 0.55f)
-        {
-            float k = smoothstep((t - 0.25f) / 0.30f);
-
-            *r = LED_ON_R * (0.35f - 0.22f * k);
-            *g = LED_ON_G * 1.30f;
-            *b = LED_ON_B * (1.45f - 1.10f * k);
-        }
-        else
-        {
-            float k = smoothstep((t - 0.55f) / 0.45f);
-
-            *r = LED_ON_R * (0.13f + 1.35f * k);
-            *g = LED_ON_G * 1.25f;
-            *b = LED_ON_B * (0.35f - 0.35f * k);
-        }
+        if (segment(t, 0.00f, 0.14f, C_SKY, C_WHITEG, r,g,b)) break;
+        if (segment(t, 0.14f, 0.28f, C_WHITEG, C_YELLOW, r,g,b)) break;
+        if (segment(t, 0.28f, 0.46f, C_YELLOW, C_ORANGE, r,g,b)) break;
+        if (segment(t, 0.46f, 0.64f, C_ORANGE, C_WHITEP, r,g,b)) break;
+        if (segment(t, 0.64f, 0.82f, C_WHITEP, C_PINK, r,g,b)) break;
+        segment(t, 0.82f, 1.00f, C_PINK, C_PURPLE, r,g,b);
         break;
-    }
 
-    // ==================================================
-    // ICE BLUE
-    // ==================================================
     case 1:
-    {
-        if (t < 0.30f)
-        {
-            float k = smoothstep(t / 0.30f);
-
-            *r = LED_ON_R * (0.25f + 0.75f * k);
-            *g = LED_ON_G * 0.03f;
-            *b = LED_ON_B * 1.45f;
-        }
-        else if (t < 0.65f)
-        {
-            float k = smoothstep((t - 0.30f) / 0.35f);
-
-            *r = LED_ON_R * 1.15f;
-            *g = LED_ON_G * (0.03f + 0.15f * k);
-            *b = LED_ON_B * (1.45f - 0.30f * k);
-        }
-        else
-        {
-            float k = smoothstep((t - 0.65f) / 0.35f);
-
-            *r = LED_ON_R * (1.15f - 0.45f * k);
-            *g = LED_ON_G * (0.18f - 0.08f * k);
-            *b = LED_ON_B * (1.15f + 0.25f * k);
-        }
+        if (segment(t, 0.00f, 0.25f, C_LIME, C_CYAN, r,g,b)) break;
+        if (segment(t, 0.25f, 0.50f, C_CYAN, C_BLUE, r,g,b)) break;
+        if (segment(t, 0.50f, 0.75f, C_BLUE, C_PURPLE, r,g,b)) break;
+        segment(t, 0.75f, 1.00f, C_PURPLE, C_LAV, r,g,b);
         break;
-    }
 
-    // ==================================================
-    // NEON MAGENTA
-    // ==================================================
     case 2:
-    {
-        if (t < 0.35f)
-        {
-            float k = smoothstep(t / 0.35f);
-
-            *r = LED_ON_R * 0.02f;
-            *g = LED_ON_G * (0.05f + 0.28f * k);
-            *b = LED_ON_B * (1.15f + 0.40f * k);
-        }
-        else if (t < 0.70f)
-        {
-            float k = smoothstep((t - 0.35f) / 0.35f);
-
-            *r = LED_ON_R * (0.02f + 0.06f * k);
-            *g = LED_ON_G * (0.33f + 0.85f * k);
-            *b = LED_ON_B * 1.55f;
-        }
-        else
-        {
-            float k = smoothstep((t - 0.70f) / 0.30f);
-
-            *r = LED_ON_R * (0.08f + 0.18f * k);
-            *g = LED_ON_G * (1.18f - 0.10f * k);
-            *b = LED_ON_B * (1.55f - 0.05f * k);
-        }
+        if (segment(t, 0.00f, 0.12f, C_RED, C_PINK, r,g,b)) break;
+        if (segment(t, 0.12f, 0.26f, C_PINK, C_WHITEP, r,g,b)) break;
+        if (segment(t, 0.26f, 0.40f, C_WHITEP, C_LAV, r,g,b)) break;
+        if (segment(t, 0.40f, 0.54f, C_LAV, C_PURPLE, r,g,b)) break;
+        if (segment(t, 0.54f, 0.68f, C_PURPLE, C_BLUE, r,g,b)) break;
+        if (segment(t, 0.68f, 0.84f, C_BLUE, C_SKY, r,g,b)) break;
+        segment(t, 0.84f, 1.00f, C_SKY, C_CYAN, r,g,b);
         break;
-    }
 
-    // ==================================================
-    // RGB LASER
-    // ==================================================
     case 3:
-    {
-        if (t < 0.25f)
-        {
-            float k = smoothstep(t / 0.25f);
-
-            *r = LED_ON_R * (0.05f + 1.00f * k);
-            *g = LED_ON_G * 1.20f;
-            *b = 0;
-        }
-        else if (t < 0.50f)
-        {
-            float k = smoothstep((t - 0.25f) / 0.25f);
-
-            *r = LED_ON_R * 1.20f;
-            *g = LED_ON_G * (1.20f - 1.05f * k);
-            *b = LED_ON_B * (1.20f * k);
-        }
-        else if (t < 0.75f)
-        {
-            float k = smoothstep((t - 0.50f) / 0.25f);
-
-            *r = LED_ON_R * (1.20f - 1.05f * k);
-            *g = LED_ON_G * (0.15f - 0.10f * k);
-            *b = LED_ON_B * 1.30f;
-        }
-        else
-        {
-            float k = smoothstep((t - 0.75f) / 0.25f);
-
-            *r = LED_ON_R * (0.15f + 0.45f * k);
-            *g = LED_ON_G * (0.15f + 0.75f * k);
-            *b = LED_ON_B * 1.30f;
-        }
+        if (segment(t, 0.00f, 0.25f, C_GREEN, C_YELLOW, r,g,b)) break;
+        if (segment(t, 0.25f, 0.50f, C_YELLOW, C_BLUE, r,g,b)) break;
+        if (segment(t, 0.50f, 0.75f, C_BLUE, C_PURPLE, r,g,b)) break;
+        segment(t, 0.75f, 1.00f, C_PURPLE, C_CYAN, r,g,b);
         break;
-    }
 
-    // ==================================================
-    // FIRE AMBER
-    // ==================================================
     case 4:
-    {
-        if (t < 0.30f)
-        {
-            float k = smoothstep(t / 0.30f);
-
-            *r = LED_ON_R * 1.30f;
-            *g = LED_ON_G * (0.03f + 0.45f * k);
-            *b = 0;
-        }
-        else if (t < 0.65f)
-        {
-            float k = smoothstep((t - 0.30f) / 0.35f);
-
-            *r = LED_ON_R * (1.30f - 0.12f * k);
-            *g = LED_ON_G * (0.48f + 0.72f * k);
-            *b = LED_ON_B * 0.08f;
-        }
-        else
-        {
-            float k = smoothstep((t - 0.65f) / 0.35f);
-
-            *r = LED_ON_R * (1.18f - 0.08f * k);
-            *g = LED_ON_G * 1.20f;
-            *b = LED_ON_B * (0.08f + 0.40f * k);
-        }
+        if (segment(t, 0.00f, 0.16f, C_RED, C_PINK, r,g,b)) break;
+        if (segment(t, 0.16f, 0.34f, C_PINK, C_WHITEP, r,g,b)) break;
+        if (segment(t, 0.34f, 0.54f, C_WHITEP, C_LIME, r,g,b)) break;
+        if (segment(t, 0.54f, 0.76f, C_LIME, C_GREEN, r,g,b)) break;
+        segment(t, 0.76f, 1.00f, C_GREEN, C_CYAN, r,g,b);
         break;
-    }
 
-    // ==================================================
-    // TOXIC MINT (default)
-    // ==================================================
     default:
-    {
-        if (t < 0.35f)
-        {
-            float k = smoothstep(t / 0.35f);
-
-            *r = LED_ON_R * (0.03f - 0.02f * k);
-            *g = LED_ON_G * (0.40f + 0.50f * k);
-            *b = LED_ON_B * (0.22f + 0.55f * k);
-        }
-        else if (t < 0.70f)
-        {
-            float k = smoothstep((t - 0.35f) / 0.35f);
-
-            *r = LED_ON_R * (0.01f + 0.08f * k);
-            *g = LED_ON_G * (0.90f + 0.18f * k);
-            *b = LED_ON_B * (0.77f - 0.20f * k);
-        }
-        else
-        {
-            float k = smoothstep((t - 0.70f) / 0.30f);
-
-            *r = LED_ON_R * (0.09f + 0.20f * k);
-            *g = LED_ON_G * 1.08f;
-            *b = LED_ON_B * (0.57f + 0.23f * k);
-        }
+        if (segment(t, 0.00f, 0.14f, C_YELLOW, C_WARMW, r,g,b)) break;
+        if (segment(t, 0.14f, 0.28f, C_WARMW, C_PINK, r,g,b)) break;
+        if (segment(t, 0.28f, 0.44f, C_PINK, C_PURPLE, r,g,b)) break;
+        if (segment(t, 0.44f, 0.62f, C_PURPLE, C_BLUE, r,g,b)) break;
+        if (segment(t, 0.62f, 0.82f, C_BLUE, C_CYAN, r,g,b)) break;
+        segment(t, 0.82f, 1.00f, C_CYAN, C_GREEN, r,g,b);
         break;
-    }
     }
 }
 
 // ======================================================
 // PEAK COLOR
 // ======================================================
+
 void VisualTheme_GetPeakColor(
     uint8_t theme,
     float *r,
     float *g,
     float *b)
 {
+    Color c;
+
     switch (theme)
     {
-    case 0: *r = LED_ON_R * 0.10f; *g = LED_ON_G * 1.25f; *b = LED_ON_B * 0.12f; break;
-    case 1: *r = LED_ON_R * 1.35f; *g = LED_ON_G * 0.08f; *b = LED_ON_B * 1.15f; break;
-    case 2: *r = LED_ON_R * 0.05f; *g = LED_ON_G * 0.95f; *b = LED_ON_B * 1.60f; break;
-    case 3: *r = LED_ON_R * 0.55f; *g = LED_ON_G * 0.85f; *b = LED_ON_B * 1.35f; break;
-    case 4: *r = LED_ON_R * 1.35f; *g = LED_ON_G * 0.85f; *b = LED_ON_B * 0.05f; break;
-    default:*r = LED_ON_R * 0.25f; *g = LED_ON_G * 1.25f; *b = LED_ON_B * 0.70f; break;
+    case 0: c = C_GREEN;   break;
+    case 1: c = C_PINK;    break;
+    case 2: c = C_YELLOW;  break;
+    case 3: c = C_WARMW;   break;
+    case 4: c = C_BLUE;    break;
+    default: c = C_ORANGE; break;
     }
+
+    applyColor(c, r, g, b);
 }
 
 // ======================================================
-// MIRROR COLOR
+// MIRROR COLOR (STABLE NONLINEAR)
 // ======================================================
+
 void VisualTheme_GetMirrorColor(
     uint8_t theme,
     float t,
@@ -268,28 +217,61 @@ void VisualTheme_GetMirrorColor(
     float *g,
     float *b)
 {
-    t = powf(t, 0.72f);
+    t = clamp01(t);
 
-    float k = t;
+    float k = clamp01(powf(t, 0.72f));
+    Color c;
 
     switch (theme)
     {
-    case 0: *r = LED_ON_R * (0.05f + 0.12f * k); *g = LED_ON_G * (0.25f + 0.60f * k); *b = LED_ON_B * (0.40f + 0.65f * k); break;
-    case 1: *r = LED_ON_R * (0.45f + 0.50f * k); *g = LED_ON_G * (0.10f + 0.35f * k); *b = LED_ON_B * (0.35f + 0.55f * k); break;
-    case 2: *r = 0.03f; *g = LED_ON_G * (0.40f + 0.65f * k); *b = LED_ON_B * (0.10f + 0.25f * k); break;
-    case 3: *r = LED_ON_R * (0.55f + 0.50f * k); *g = LED_ON_G * (0.20f + 0.50f * k); *b = 0; break;
-    case 4: *r = LED_ON_R * (0.70f + 0.45f * k); *g = LED_ON_G * (0.55f + 0.45f * k); *b = LED_ON_B * (0.00f + 0.10f * k); break;
-    default:
-        {
-            float v = 0.45f + 0.85f * k;
-            *r = LED_ON_R * v;
-            *g = LED_ON_G * v;
-            *b = LED_ON_B * v;
-        }
+    case 0: // BLUE (강하게, 딥블루)
+        c = (Color){
+            0.05f + 0.20f*k,
+            0.10f + 0.25f*k,
+            1.00f
+        };
+        break;
+
+    case 1: // CYAN-GREEN (구분용)
+        c = (Color){
+            0.05f + 0.20f*k,
+            1.00f,
+            0.20f + 0.30f*k
+        };
+        break;
+
+    case 2: // RED (강하게, 순수 레드)
+        c = (Color){
+            1.00f,
+            0.05f + 0.20f*k,
+            0.05f + 0.20f*k
+        };
+        break;
+
+    case 3: // PURPLE (딥 퍼플)
+        c = (Color){
+            0.60f + 0.30f*k,
+            0.05f + 0.15f*k,
+            1.00f
+        };
+        break;
+
+    case 4: // ORANGE (강한 따뜻한색)
+        c = (Color){
+            1.00f,
+            0.35f + 0.35f*k,
+            0.05f
+        };
+        break;
+
+    default: // WHITE
+        c = (Color){
+            0.85f + 0.15f*k,
+            0.85f + 0.15f*k,
+            0.85f + 0.15f*k
+        };
         break;
     }
 
-    *r = clampf(*r, LED_ON_R);
-    *g = clampf(*g, LED_ON_G);
-    *b = clampf(*b, LED_ON_B);
+    applyColor(c, r, g, b);
 }

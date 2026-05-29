@@ -156,10 +156,10 @@ void VisualTheme_GetColor(
         break;
 
     case 3:
-        if (segment(t, 0.00f, 0.25f, C_GREEN, C_YELLOW, r,g,b)) break;
-        if (segment(t, 0.25f, 0.50f, C_YELLOW, C_BLUE, r,g,b)) break;
-        if (segment(t, 0.50f, 0.75f, C_BLUE, C_PURPLE, r,g,b)) break;
-        segment(t, 0.75f, 1.00f, C_PURPLE, C_CYAN, r,g,b);
+        if (segment(t, 0.00f, 0.22f, C_LIME,   C_YELLOW, r,g,b)) break;
+        if (segment(t, 0.22f, 0.44f, C_YELLOW, C_ORANGE, r,g,b)) break;
+        if (segment(t, 0.44f, 0.66f, C_ORANGE, C_RED,    r,g,b)) break;
+        segment(t, 0.66f, 1.00f, C_RED, C_BLUE, r,g,b);
         break;
 
     case 4:

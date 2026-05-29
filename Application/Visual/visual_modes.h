@@ -38,8 +38,8 @@ void VisualModes_DrawSpectrum6(const float *trail,const float *peakHold);
 // ======================================================
 void VisualModes_DrawMirror_Full(const float *trail);
 void VisualModes_DrawMirror_Center(const float *trail);
-void VisualModes_DrawWaterfall(const float *trail);
 void VisualModes_DrawRainbow(const float *trail);
+void VisualModes_DrawWaterup(const float *trail);
 
 // ======================================================
 // GET FRAME

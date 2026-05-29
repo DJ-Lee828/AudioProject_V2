@@ -235,34 +235,6 @@ void VisualModes_DrawMirror_Center(const float *trail)
 }
 
 // ======================================================
-// WATERFALL (FIXED COLOR)
-// ======================================================
-void VisualModes_DrawWaterfall(const float *trail)
-{
-	static uint8_t waterfall[MATRIX_HEIGHT][MATRIX_WIDTH][3];
-
-	for (int y = MATRIX_HEIGHT - 1; y > 0; y--)
-		memcpy(waterfall[y], waterfall[y - 1], MATRIX_WIDTH * 3);
-
-	for (int x = 0; x < MATRIX_WIDTH; x++)
-	{
-		int h = (int)(trail[x]);
-
-		float t = (float)h / (float)MATRIX_HEIGHT;
-
-		float r,g,b;
-
-		VisualTheme_GetColor(s_spectrumTheme, t, &r, &g, &b);
-
-		waterfall[0][x][0] = s_gammaTable[(uint8_t)r];
-		waterfall[0][x][1] = s_gammaTable[(uint8_t)g];
-		waterfall[0][x][2] = s_gammaTable[(uint8_t)b];
-	}
-
-	memcpy(s_frame, waterfall, sizeof(s_frame));
-}
-
-// ======================================================
 // RAINBOW
 // ======================================================
 void VisualModes_DrawRainbow(const float *trail)
@@ -290,6 +262,34 @@ void VisualModes_DrawRainbow(const float *trail)
 			s_frame[yy][x][2] = s_gammaTable[(uint8_t)b];
 		}
 	}
+}
+
+// ======================================================
+// WATERFALL (FIXED COLOR)
+// ======================================================
+void VisualModes_DrawWaterup(const float *trail)
+{
+	static uint8_t waterfall[MATRIX_HEIGHT][MATRIX_WIDTH][3];
+
+	for (int y = MATRIX_HEIGHT - 1; y > 0; y--)
+		memcpy(waterfall[y], waterfall[y - 1], MATRIX_WIDTH * 3);
+
+	for (int x = 0; x < MATRIX_WIDTH; x++)
+	{
+		int h = (int)(trail[x]);
+
+		float t = (float)h / (float)MATRIX_HEIGHT;
+
+		float r,g,b;
+
+		VisualTheme_GetColor(s_spectrumTheme, t, &r, &g, &b);
+
+		waterfall[0][x][0] = s_gammaTable[(uint8_t)r];
+		waterfall[0][x][1] = s_gammaTable[(uint8_t)g];
+		waterfall[0][x][2] = s_gammaTable[(uint8_t)b];
+	}
+
+	memcpy(s_frame, waterfall, sizeof(s_frame));
 }
 
 // ======================================================

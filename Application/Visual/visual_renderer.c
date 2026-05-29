@@ -157,17 +157,17 @@ void VisualRenderer_Draw(const float *trail, const float *peakHold)
 			break;
 
 		// ==============================================
-		// WATERFALL
-		// ==============================================
-		case VISUAL_MODE_WATERFALL:
-			VisualModes_DrawWaterfall(trail);
-			break;
-
-		// ==============================================
 		// RAINBOW
 		// ==============================================
 		case VISUAL_MODE_RAINBOW:
 			VisualModes_DrawRainbow(trail);
+			break;
+
+		// ==============================================
+		// WATERFALL
+		// ==============================================
+		case VISUAL_MODE_WATERUP:
+			VisualModes_DrawWaterup(trail);
 			break;
 
 		// ==============================================
